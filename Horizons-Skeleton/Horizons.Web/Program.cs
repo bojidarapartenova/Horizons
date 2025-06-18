@@ -1,7 +1,8 @@
 namespace Horizons.Web
 {
     using Horizons.Data;
-
+    using Horizons.Services.Core;
+    using Horizons.Services.Core.Contracts;
     using Microsoft.AspNetCore.Identity;
     using Microsoft.EntityFrameworkCore;
     public class Program
@@ -31,6 +32,9 @@ namespace Horizons.Web
                 options.Password.RequireLowercase = false;
             })
                 .AddEntityFrameworkStores<HorizonDbContext>();
+
+            builder.Services.AddScoped<IDestinationService, DestinationService>();
+
             builder.Services.AddControllersWithViews();
 
             var app = builder.Build();
