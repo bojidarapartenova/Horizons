@@ -6,7 +6,10 @@
     If true, the "Favorites" button will not be displayed.
 *@
 
-@* @{
+@using Horizons.Web.ViewModels.Destination;
+@model DestinationDetailsViewModel;
+
+@{
     ViewData["Title"] = "Destination Details";
 }
 
@@ -34,7 +37,7 @@
             <p class="card-text">@Model.Description</p>
             <hr />
             <p class="card-text"><small class="text-muted">Terrain: @Model.Terrain</small></p>
-            <p class="card-text"><small class="text-muted">Published On: @Model.PublishedOn.ToString("dd/MM/yyyy")</small></p>
+            <p class="card-text"><small class="text-muted">Published On: @Model.PublishedOn.ToString()</small></p>
             <p class="card-text"><small class="text-muted">Publisher: @Model.Publisher</small></p>
             <hr />
         </div>
@@ -65,4 +68,3 @@
         </div>
     </div>
 </div>
- *@
