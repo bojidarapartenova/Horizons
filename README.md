@@ -1,1 +1,2 @@
-
+Welcome to Horizons 
+Horizons is a web application designed to inspire and guide travelers by showcasing the best tourist destinations in Bulgaria. Whether you're looking to explore breathtaking natural landmarks or historical sites, Horizons provides a platform where users can discover, save, and share their favorite destinations. Logged-in users can create and manage their own Favorites list, while each destination tracks its popularity through a counter for user engagement.
