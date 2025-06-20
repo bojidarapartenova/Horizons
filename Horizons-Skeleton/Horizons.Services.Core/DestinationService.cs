@@ -1,12 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
+using System.Reflection.Metadata.Ecma335;
 using System.Text;
 using System.Threading.Tasks;
 using Horizons.Data;
 using Horizons.Data.Models;
 using Horizons.Services.Core.Contracts;
 using Horizons.Web.ViewModels.Destination;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using static Horizons.GCommon.ValidationConstants.Destination;
 
@@ -15,10 +18,12 @@ namespace Horizons.Services.Core
     public class DestinationService : IDestinationService
     {
         private readonly HorizonDbContext dbContext;
+        private readonly UserManager<IdentityUser> userManager;
 
-        public DestinationService(HorizonDbContext dbContext)
+        public DestinationService(HorizonDbContext dbContext, UserManager<IdentityUser> userManager)
         {
             this.dbContext = dbContext;
+            this.userManager = userManager;
         }
         public async Task<IEnumerable<DestinationIndexViewModel>> GetAllDestinationsAsync(string? userId)
         {
@@ -76,6 +81,92 @@ namespace Horizons.Services.Core
             }
 
             return detailsVm;
+        }
+
+        public async Task<bool> AddDestinationAsync(string userId, AddDestinationInputModel inputModel)
+        {
+            bool result = false;
+
+            IdentityUser? user = await userManager.FindByIdAsync(userId);
+
+            Terrain? terrain = await dbContext.Terrains.FindAsync(inputModel.TerrainId);
+            bool isPublishedOnValid = DateTime
+                .TryParseExact(inputModel.PublishedOn, DateFormat,
+                CultureInfo.InvariantCulture, DateTimeStyles.None,
+                out DateTime publishedOn);
+
+            if (user != null && terrain != null && isPublishedOnValid)
+            {
+                Destination destination = new Destination()
+                {
+                    Name = inputModel.Name,
+                    Description = inputModel.Description,
+                    ImageUrl = inputModel.ImageUrl,
+                    PublishedOn = publishedOn,
+                    PublisherId = userId,
+                    TerrainId = inputModel.TerrainId
+                };
+
+                await dbContext.Destinations.AddAsync(destination);
+                await dbContext.SaveChangesAsync();
+
+                result = true;
+            }
+            return result;
+        }
+
+        public async Task<EditDestinationInputModel?> GetDestinationForEditingAsync(string userId, int? dId)
+        {
+            EditDestinationInputModel? editModel = null;
+
+            if(dId!=null)
+            {
+                Destination? destination = await dbContext
+                    .Destinations
+                    .AsNoTracking()
+                    .SingleOrDefaultAsync(d => d.Id == dId);
+
+                if(destination!=null && destination.PublisherId.ToLower()==userId.ToLower())
+                {
+                    editModel = new EditDestinationInputModel()
+                    {
+                        Id = destination.Id,
+                        Name = destination.Name,
+                        Description = destination.Description,
+                        ImageUrl = destination.ImageUrl,
+                        PublishedOn = destination.PublishedOn.ToString(DateFormat),
+                        PublisherId = destination.PublisherId,
+                        TerrainId=destination.TerrainId
+                    };
+                }
+            }
+            return editModel;
+        }
+
+        public async Task<bool> PersistEditDestinationAsync(EditDestinationInputModel inputModel)
+        {
+            bool result = false;
+            Terrain? terrain = await dbContext.Terrains.FindAsync(inputModel.TerrainId);
+            bool isPublishedOnValid = DateTime
+                .TryParseExact(inputModel.PublishedOn, DateFormat,
+                CultureInfo.InvariantCulture, DateTimeStyles.None,
+                out DateTime publishedOn);
+            Destination? updatedDestination = await dbContext.Destinations
+                .FindAsync(inputModel.Id);
+
+            if(updatedDestination!=null && terrain!=null && isPublishedOnValid)
+            {
+                updatedDestination.Name = inputModel.Name;
+                updatedDestination.Description = inputModel.Description;
+                updatedDestination.ImageUrl = inputModel.ImageUrl;
+                updatedDestination.PublishedOn = publishedOn;
+                updatedDestination.TerrainId = inputModel.TerrainId;
+
+                await dbContext.SaveChangesAsync();
+                result = true;
+            }
+
+            return result;
         }
     }
 }

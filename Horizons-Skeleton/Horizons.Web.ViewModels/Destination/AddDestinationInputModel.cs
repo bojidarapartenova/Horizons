@@ -18,7 +18,7 @@ namespace Horizons.Web.ViewModels.Destination
         [Required]
         public int TerrainId {  get; set; }
 
-        public IEnumerable<AddDestinationTerrainDropDownModel> Terrains { get; set; }=null!;
+        public IEnumerable<AddDestinationTerrainDropDownModel>? Terrains { get; set; }
 
         [Required]
         [MinLength(DescriptionMinLength)]

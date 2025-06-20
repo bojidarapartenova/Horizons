@@ -66,13 +66,96 @@ namespace Horizons.Web.Controllers
         [HttpGet]
         public async Task<IActionResult> Add()
         {
-            AddDestinationInputModel inputModel = new AddDestinationInputModel()
+            try
             {
-                PublishedOn = DateTime.UtcNow.ToString(DateFormat),
-                Terrains = await terrainService.GetTerrainDropDownAsync()
-            };
+                AddDestinationInputModel inputModel = new AddDestinationInputModel()
+                {
+                    PublishedOn=DateTime.UtcNow.ToString(DateFormat),
+                    Terrains = await terrainService.GetTerrainDropDownAsync()
+                };
 
-            return View(inputModel);
+                return View(inputModel);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+                return RedirectToAction(nameof(Index));
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Add(AddDestinationInputModel inputModel)
+        {
+            try
+            {
+                if(!ModelState.IsValid)
+                {
+                    return RedirectToAction(nameof(Add));
+                }
+
+                bool result= await destinationService.AddDestinationAsync(GetUserId()!, inputModel);
+
+                if(result==false)
+                {
+                    return RedirectToAction(nameof(Add));
+                }
+
+                return RedirectToAction(nameof(Index));
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+                return RedirectToAction(nameof(Index));
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> Edit(int? id)
+        {
+            try
+            {
+                string userId = GetUserId()!;
+                EditDestinationInputModel? inputModel = await
+                    destinationService.GetDestinationForEditingAsync(userId, id);
+
+                if(inputModel == null)
+                {
+                    return RedirectToAction(nameof(Index));
+                }
+                inputModel.Terrains = await terrainService.GetTerrainDropDownAsync();
+
+                return View(inputModel);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+                return RedirectToAction(nameof(Index));
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Edit(EditDestinationInputModel inputModel)
+        {
+            try
+            {
+                if(!ModelState.IsValid)
+                {
+                    return View(inputModel);
+                }
+                bool result=await destinationService.PersistEditDestinationAsync(inputModel);
+
+                if(result==false)
+                {
+                    return View(inputModel);
+                }
+
+                return RedirectToAction(nameof(Details));
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+                return RedirectToAction(nameof(Index));
+            }
         }
     }
 }
