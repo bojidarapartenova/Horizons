@@ -157,5 +157,105 @@ namespace Horizons.Web.Controllers
                 return RedirectToAction(nameof(Index));
             }
         }
+
+        [HttpGet]
+        public async Task<IActionResult> Delete(int? id)
+        {
+            try
+            {
+                string userId = GetUserId()!;
+
+                DeleteDestinationViewModel? deleteModel = await destinationService.GetDestinationForDeletingAsync(userId, id);
+
+                if(deleteModel==null)
+                {
+                    return RedirectToAction(nameof(Index));
+                }
+
+                return View(deleteModel);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+                return RedirectToAction(nameof(Index));
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Delete(DeleteDestinationViewModel deleteModel)
+        {
+            try
+            {
+                if(!ModelState.IsValid)
+                {
+                    return View(deleteModel);
+                }
+
+                bool result = await destinationService.SoftDeleteDestinationAsync(GetUserId()!, deleteModel);
+
+                if(result==false)
+                {
+                    return View(deleteModel);
+                }
+
+                return RedirectToAction(nameof(Index));
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+                return RedirectToAction(nameof(Index));
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> Favorites()
+        {
+            try
+            {
+                string userId = GetUserId()!;
+
+                IEnumerable<FavoriteDestinationViewModel>? destinations=await 
+                    destinationService.GetFavoriteDestinationsAsync(userId);
+
+                if(destinations==null)
+                {
+                    return RedirectToAction(nameof(Index));
+                }
+
+                return View(destinations);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+                return RedirectToAction(nameof(Index));
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> AddToFavorites(int? id)
+        {
+            try
+            {
+                string userId=GetUserId()!;
+
+                if(id==null)
+                {
+                    return RedirectToAction(nameof(Index));
+                }
+                bool result = await destinationService.AddToFavoritesAsync(userId, id.Value);
+
+                if(result==false)
+                {
+                    return RedirectToAction(nameof(Index));
+                }
+
+                return RedirectToAction(nameof(Favorites));
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+                return RedirectToAction(nameof(Index));
+            }
+        }
     }
 }

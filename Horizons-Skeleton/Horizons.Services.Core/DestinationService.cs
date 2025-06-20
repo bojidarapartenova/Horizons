@@ -168,5 +168,109 @@ namespace Horizons.Services.Core
 
             return result;
         }
+
+        public async Task<DeleteDestinationViewModel?> GetDestinationForDeletingAsync(string userId, int? dId)
+        {
+            DeleteDestinationViewModel? deleteModel = null;
+
+            if(dId!=null)
+            {
+                Destination? destination = await dbContext
+                    .Destinations
+                    .Include(d=>d.Publisher)
+                    .AsNoTracking()
+                    .SingleOrDefaultAsync(d => d.Id == dId);
+
+                if(destination!=null &&
+                    destination.PublisherId.ToLower()==userId.ToLower())
+                {
+                    deleteModel = new DeleteDestinationViewModel()
+                    {
+                        Id = destination.Id,
+                        Name = destination.Name,
+                        Publisher=destination.Publisher.NormalizedUserName,
+                        PublisherId = destination.PublisherId
+                    };
+                }
+            }
+            return deleteModel;
+        }
+
+        public async Task<bool> SoftDeleteDestinationAsync(string userId, DeleteDestinationViewModel deleteModel)
+        {
+            bool result = false;
+
+            IdentityUser? user=await userManager.FindByIdAsync(userId);
+            Destination? destination = await dbContext.Destinations.FindAsync(deleteModel.Id);
+
+            if(user!=null && destination!=null && 
+                destination.PublisherId.ToLower()==userId.ToLower())
+            {
+                destination.IsDeleted = true;
+
+                await dbContext.SaveChangesAsync();
+                result = true;
+            }
+
+            return result;
+        }
+
+        public async Task<IEnumerable<FavoriteDestinationViewModel>?> GetFavoriteDestinationsAsync(string userId)
+        {
+            IEnumerable<FavoriteDestinationViewModel>? favDestination = null;
+
+            IdentityUser? user = await userManager.FindByIdAsync(userId);
+
+            if (user != null)
+            {
+                favDestination = await dbContext
+                    .UsersDestinations
+                    .Where(d => d.UserId.ToLower() == userId.ToLower())
+                    .Select(d => new FavoriteDestinationViewModel()
+                    {
+                        Id = d.DestinationId,
+                        Name = d.Destination.Name,
+                        ImageUrl = d.Destination.ImageUrl,
+                        Terrain = d.Destination.Terrain.Name
+                    }).ToArrayAsync();
+            }
+
+            return favDestination;
+        }
+
+        public async Task<bool> AddToFavoritesAsync(string userId, int dId)
+        {
+            bool result = false;
+
+            IdentityUser? user=await userManager.FindByIdAsync(userId);
+            Destination? destination=dbContext
+                .Destinations
+                .SingleOrDefault(d=>d.Id == dId);
+
+            if(user!=null && destination!=null &&
+                destination.PublisherId.ToLower()==userId.ToLower())
+            {
+                UserDestination? userDestination = await dbContext
+                    .UsersDestinations
+                    .SingleOrDefaultAsync(ud => ud.UserId.ToLower() == userId.ToLower() &&
+                    ud.DestinationId == dId);
+
+                if(userDestination!=null)
+                {
+                    userDestination = new UserDestination()
+                    {
+                        UserId = userId,
+                        DestinationId = dId
+                    };
+
+                    await dbContext.UsersDestinations.AddAsync(userDestination);
+                    await dbContext.SaveChangesAsync();
+
+                    result = true;
+                }
+            }
+
+            return result;
+        }
     }
 }
