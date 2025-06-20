@@ -217,25 +217,28 @@ namespace Horizons.Services.Core
 
         public async Task<IEnumerable<FavoriteDestinationViewModel>?> GetFavoriteDestinationsAsync(string userId)
         {
-            IEnumerable<FavoriteDestinationViewModel>? favDestination = null;
+            IEnumerable<FavoriteDestinationViewModel>? favDestinations = null;
 
             IdentityUser? user = await userManager.FindByIdAsync(userId);
 
             if (user != null)
             {
-                favDestination = await dbContext
+                favDestinations = await dbContext
                     .UsersDestinations
-                    .Where(d => d.UserId.ToLower() == userId.ToLower())
-                    .Select(d => new FavoriteDestinationViewModel()
+                    .Include(ud=>ud.Destination)
+                    .ThenInclude(d=>d.Terrain)
+                    .Where(ud => ud.UserId.ToLower() == userId.ToLower())
+                    .Select(ud => new FavoriteDestinationViewModel()
                     {
-                        Id = d.DestinationId,
-                        Name = d.Destination.Name,
-                        ImageUrl = d.Destination.ImageUrl,
-                        Terrain = d.Destination.Terrain.Name
-                    }).ToArrayAsync();
+                        Id = ud.DestinationId,
+                        Name = ud.Destination.Name,
+                        ImageUrl = ud.Destination.ImageUrl,
+                        Terrain = ud.Destination.Terrain.Name
+                    })
+                    .ToArrayAsync();
             }
 
-            return favDestination;
+            return favDestinations;
         }
 
         public async Task<bool> AddToFavoritesAsync(string userId, int dId)
@@ -243,19 +246,19 @@ namespace Horizons.Services.Core
             bool result = false;
 
             IdentityUser? user=await userManager.FindByIdAsync(userId);
-            Destination? destination=dbContext
+            Destination? destinations = await dbContext
                 .Destinations
-                .SingleOrDefault(d=>d.Id == dId);
+                .FindAsync(dId);
 
-            if(user!=null && destination!=null &&
-                destination.PublisherId.ToLower()==userId.ToLower())
+            if(user!=null && destinations!=null &&
+                destinations.PublisherId.ToLower()!=userId.ToLower())
             {
                 UserDestination? userDestination = await dbContext
                     .UsersDestinations
                     .SingleOrDefaultAsync(ud => ud.UserId.ToLower() == userId.ToLower() &&
                     ud.DestinationId == dId);
 
-                if(userDestination!=null)
+                if(userDestination==null)
                 {
                     userDestination = new UserDestination()
                     {
