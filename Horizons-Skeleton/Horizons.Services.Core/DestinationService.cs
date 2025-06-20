@@ -275,5 +275,32 @@ namespace Horizons.Services.Core
 
             return result;
         }
+
+        public async Task<bool> RemoveFromFavoritesAsync(string userId, int dId)
+        {
+            bool result = false;
+
+            IdentityUser? user= await userManager.FindByIdAsync(userId);
+            Destination? destination= await dbContext
+                .Destinations
+                .FindAsync(dId);
+
+            if(user!=null && destination!=null)
+            {
+                UserDestination? userDestination = await dbContext
+                    .UsersDestinations
+                    .SingleOrDefaultAsync(ud => ud.UserId.ToLower() == userId.ToLower()
+                    && ud.DestinationId == dId);
+
+                if(userDestination!=null)
+                {
+                    dbContext.UsersDestinations.Remove(userDestination);
+                    await dbContext.SaveChangesAsync();
+
+                    result = true;
+                }
+            }
+            return result;
+        }
     }
 }

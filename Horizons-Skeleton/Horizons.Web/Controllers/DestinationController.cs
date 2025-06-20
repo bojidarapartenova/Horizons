@@ -257,5 +257,33 @@ namespace Horizons.Web.Controllers
                 return RedirectToAction(nameof(Index));
             }
         }
+
+        [HttpPost]
+        public async Task<IActionResult> RemoveFromFavorites(int? id)
+        {
+            try
+            {
+                string userId=GetUserId()!;
+
+                if(id==null)
+                {
+                    return RedirectToAction(nameof(Index));
+                }
+
+                bool result = await destinationService.RemoveFromFavoritesAsync(userId, id.Value);
+
+                if(result==false)
+                {
+                    return RedirectToAction(nameof(Index));
+                }
+
+                return RedirectToAction(nameof(Favorites));
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+                return RedirectToAction(nameof(Index));
+            }
+        }
     }
 }
